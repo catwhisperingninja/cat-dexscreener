@@ -1,0 +1,32 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Node modules
+node_modules/
+
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+CLAUDE.md
+docs/
+
+# Test files
+src/tests/
+*.test.*
+
+# Build artifacts (we'll build inside container)
+build/
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -13,8 +13,15 @@ RUN npm install
 # Copy the rest of the application code
 COPY . .
 
-# Expose the port your MCP server listens on (adjust if needed)
-EXPOSE 3000
+# Copy smithery.yaml configuration
+COPY smithery.yaml ./
+
+# Expose the port for HTTP mode (required for Smithery)
+EXPOSE 8080
+
+# Set environment variable from build arg (can be overridden at runtime)
+ARG SMITHERY_API_KEY
+ENV SMITHERY_API_KEY=${SMITHERY_API_KEY}
 
 # Start the MCP server
 CMD ["npm", "start"]

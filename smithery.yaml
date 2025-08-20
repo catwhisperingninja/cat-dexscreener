@@ -1,0 +1,15 @@
+runtime: "container"
+build:
+  dockerfile: "Dockerfile" # Path to your Dockerfile
+  dockerBuildPath: "." # Docker build context
+startCommand:
+  type: "http"
+  configSchema: # JSON Schema for configuration
+    type: "object"
+    properties:
+      apiKey:
+        type: "string"
+        description: "Smithery API key"
+    required: ["SMITHERY_API_KEY"]
+  exampleConfig:
+    apiKey: "${SMITHERY_API_KEY}"
