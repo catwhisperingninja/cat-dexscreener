@@ -5,7 +5,7 @@ import { ErrorCode, McpError, ListToolsRequestSchema, CallToolRequestSchema, Lis
 import type { DexScreenerService } from './services/dexscreener.js';
 import type { ListToolsRequest, CallToolRequest, McpToolResponse } from './types/mcp.js';
 
-class DexScreenerMcpServer {
+export class DexScreenerMcpServer {
   private server!: Server;
   private dexService: DexScreenerService;
   private resources: Record<string, any>;

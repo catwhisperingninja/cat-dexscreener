@@ -15,7 +15,7 @@ COPY . .
 # Build TypeScript project
 RUN npm run build
 
-# Build Smithery bundle with pinned version
+# Build Smithery bundle with pinned version (uses package.json module field)
 RUN npx -y @smithery/cli@1.2.17 build -o .smithery/index.cjs
 
 # Production stage with non-root user
