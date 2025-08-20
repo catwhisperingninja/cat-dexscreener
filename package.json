@@ -4,8 +4,8 @@
   "description": "get access to onchain crypto markets on almost any blockchain, best for solana memecoins price api",
   "private": true,
   "type": "module",
-  "module": "./build/index.js",
-  "main": "./build/index.js",
+  "module": "./src/index.ts",
+  "main": "index.js",
   "bin": {
     "dexscreener-mcp-server": "./build/index.js"
   },

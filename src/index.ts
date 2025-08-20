@@ -429,22 +429,11 @@ async function main() {
   await server.run().catch(console.error);
 }
 
-// For direct execution (non-Smithery)
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main().catch(console.error);
-}
+// Create server instance
+import { DexScreenerService } from './services/dexscreener.js';
 
-// Smithery export - expects default function
-export default async function({ sessionId, config }: { sessionId: string; config: any }) {
-  console.error(`[Smithery] Starting MCP server for session ${sessionId}`);
-  
-  // Use config.apiKey if provided
-  if (config?.apiKey) {
-    process.env.SMITHERY_API_KEY = config.apiKey;
-  }
-  
-  const { DexScreenerService } = await import('./services/dexscreener.js');
-  const dexService = new DexScreenerService();
-  const server = new DexScreenerMcpServer(dexService);
-  await server.run();
-}
+const dexService = new DexScreenerService();
+const mcpServer = new DexScreenerMcpServer(dexService);
+
+// Default export for Smithery - export the server's internal Server instance
+export default mcpServer.server;

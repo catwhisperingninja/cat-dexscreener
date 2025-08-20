@@ -1,27 +1,26 @@
-# Smithery container runtime
+# Smithery TypeScript server - following cookbook pattern
 FROM node:22-slim
 
 WORKDIR /app
 
-# Copy all project files
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy all source files
 COPY . .
 
-# Install dependencies and build TypeScript
-RUN npm ci && \
-    npm run build
+# Build with Smithery CLI (like the cookbook)
+RUN npx @smithery/cli build
 
-# Install Smithery CLI globally
-RUN npm install -g @smithery/cli@1.2.17
-
-# Build the Smithery bundle
-RUN smithery build -o .smithery/index.cjs
-
-# Expose port 8080 for Smithery HTTP transport
+# Expose port 8080
 EXPOSE 8080
 
 # Environment variables
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# Start the built server
+# Start the server using the built Smithery bundle
 CMD ["node", ".smithery/index.cjs"]
