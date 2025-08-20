@@ -2,11 +2,11 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { ErrorCode, McpError, ListToolsRequestSchema, CallToolRequestSchema, ListResourcesRequestSchema, ReadResourceRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import type { DexScreenerService } from './services/dexscreener.js';
+import { DexScreenerService } from './services/dexscreener.js';
 import type { ListToolsRequest, CallToolRequest, McpToolResponse } from './types/mcp.js';
 
 export class DexScreenerMcpServer {
-  private server!: Server;
+  public server!: Server;
   private dexService: DexScreenerService;
   private resources: Record<string, any>;
 
@@ -430,8 +430,6 @@ async function main() {
 }
 
 // Create server instance
-import { DexScreenerService } from './services/dexscreener.js';
-
 const dexService = new DexScreenerService();
 const mcpServer = new DexScreenerMcpServer(dexService);
 
