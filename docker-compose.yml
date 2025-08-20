@@ -1,13 +1,10 @@
-version: '3.8'
+version: "3.8"
 
 services:
   dexscreener-mcp:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        # Pass API key as build argument from .env file
-        SMITHERY_API_KEY: ${SMITHERY_API_KEY}
     ports:
       - "8080:8080"
     environment:

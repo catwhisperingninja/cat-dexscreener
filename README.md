@@ -1,8 +1,11 @@
 # DexScreener MCP Server
 
-An MCP server implementation for accessing the DexScreener API, providing real-time access to DEX pair data, token information, and market statistics across multiple blockchains.
+An MCP server implementation for accessing the DexScreener API, providing
+real-time access to DEX pair data, token information, and market statistics
+across multiple blockchains.
 
 One-line install (automatically adds to Claude Desktop):
+
 ```bash
 curl -L https://raw.githubusercontent.com/opensvm/dexscreener-mcp-server/main/install.sh | bash
 ```
@@ -18,11 +21,67 @@ curl -L https://raw.githubusercontent.com/opensvm/dexscreener-mcp-server/main/in
 ## Installation
 
 Manual installation:
+
 ```bash
 npm install
 npm run build
 npm run setup
 ```
+
+## Runtime configuration
+
+Provide `SMITHERY_API_KEY` at runtime. Do not bake it into the image.
+
+Docker Compose (recommended):
+
+1. Using `.env` file:
+
+```bash
+echo "SMITHERY_API_KEY=your_api_key" > .env
+```
+
+Ensure your service has:
+
+```yaml
+services:
+  dexscreener-mcp:
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+```
+
+2. Or via inline environment variables:
+
+```yaml
+services:
+  dexscreener-mcp:
+    environment:
+      SMITHERY_API_KEY: ${SMITHERY_API_KEY}
+      NODE_ENV: production
+```
+
+Kubernetes:
+
+- Store the key in a Secret:
+
+```bash
+kubectl create secret generic smithery-api --from-literal=SMITHERY_API_KEY=your_api_key
+```
+
+- Reference it in your Deployment:
+
+```yaml
+env:
+  - name: SMITHERY_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: smithery-api
+        key: SMITHERY_API_KEY
+```
+
+Note: If a default is required, set it in the orchestrator (Compose/Kubernetes),
+not in the `Dockerfile`.
 
 ## Testing
 
@@ -35,79 +94,112 @@ npm test
 ### Available Tools
 
 1. `get_latest_token_profiles`
+
    - Get the latest token profiles
    - No parameters required
+
    ```typescript
-   const result = await mcpClient.callTool('dexscreener', 'get_latest_token_profiles');
+   const result = await mcpClient.callTool(
+   	"dexscreener",
+   	"get_latest_token_profiles"
+   );
    ```
 
 2. `get_latest_boosted_tokens`
+
    - Get the latest boosted tokens
    - No parameters required
+
    ```typescript
-   const result = await mcpClient.callTool('dexscreener', 'get_latest_boosted_tokens');
+   const result = await mcpClient.callTool(
+   	"dexscreener",
+   	"get_latest_boosted_tokens"
+   );
    ```
 
 3. `get_top_boosted_tokens`
+
    - Get tokens with most active boosts
    - No parameters required
+
    ```typescript
-   const result = await mcpClient.callTool('dexscreener', 'get_top_boosted_tokens');
+   const result = await mcpClient.callTool(
+   	"dexscreener",
+   	"get_top_boosted_tokens"
+   );
    ```
 
 4. `get_token_orders`
+
    - Check orders paid for a specific token
+
    ```typescript
-   const result = await mcpClient.callTool('dexscreener', 'get_token_orders', {
-     chainId: 'solana',
-     tokenAddress: 'So11111111111111111111111111111111111111112'
+   const result = await mcpClient.callTool("dexscreener", "get_token_orders", {
+   	chainId: "solana",
+   	tokenAddress: "So11111111111111111111111111111111111111112",
    });
    ```
 
 5. `get_pairs_by_chain_and_address`
+
    - Get one or multiple pairs by chain and pair address
+
    ```typescript
-   const result = await mcpClient.callTool('dexscreener', 'get_pairs_by_chain_and_address', {
-     chainId: 'solana',
-     pairId: 'HxFLKUAmAMLz1jtT3hbvCMELwH5H9tpM2QugP8sKyfhc'
-   });
+   const result = await mcpClient.callTool(
+   	"dexscreener",
+   	"get_pairs_by_chain_and_address",
+   	{
+   		chainId: "solana",
+   		pairId: "HxFLKUAmAMLz1jtT3hbvCMELwH5H9tpM2QugP8sKyfhc",
+   	}
+   );
    ```
 
 6. `get_pairs_by_token_addresses`
+
    - Get one or multiple pairs by token address (max 30)
+
    ```typescript
-   const result = await mcpClient.callTool('dexscreener', 'get_pairs_by_token_addresses', {
-     tokenAddresses: 'So11111111111111111111111111111111111111112'
-   });
+   const result = await mcpClient.callTool(
+   	"dexscreener",
+   	"get_pairs_by_token_addresses",
+   	{
+   		tokenAddresses: "So11111111111111111111111111111111111111112",
+   	}
+   );
    ```
 
 7. `search_pairs`
    - Search for pairs matching query
    ```typescript
-   const result = await mcpClient.callTool('dexscreener', 'search_pairs', {
-     query: 'SOL'
+   const result = await mcpClient.callTool("dexscreener", "search_pairs", {
+   	query: "SOL",
    });
    ```
 
 ## Rate Limits
 
 The server implements rate limiting to comply with DexScreener's API limits:
+
 - Token Profile/Boost endpoints: 60 requests per minute
 - DEX/Pairs endpoints: 300 requests per minute
 
 ## Error Handling
 
 The server handles various error scenarios:
+
 - Rate limit exceeded
 - Invalid parameters
 - Network errors
 - API errors
 
-Errors are returned in a standardized format with appropriate error codes and messages.
+Errors are returned in a standardized format with appropriate error codes and
+messages.
 
 ## API Documentation
 
-For detailed API documentation, see [docs/api-reference.md](docs/api-reference.md).
+For detailed API documentation, see
+[docs/api-reference.md](docs/api-reference.md).
 
 ## Development
 

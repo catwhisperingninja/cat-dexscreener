@@ -18,10 +18,6 @@ COPY smithery.yaml ./
 
 # Expose the port for HTTP mode (required for Smithery)
 EXPOSE 8080
-
-# Set environment variable from build arg (can be overridden at runtime)
-ARG SMITHERY_API_KEY
-ENV SMITHERY_API_KEY=${SMITHERY_API_KEY}
-
+# SMITHERY_API_KEY must be provided at runtime via environment (compose/Kubernetes)
 # Start the MCP server
 CMD ["npm", "start"]
