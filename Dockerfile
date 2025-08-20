@@ -1,23 +1,34 @@
-# Use the official Node.js LTS version as the base image
-FROM node:lts
+# Multi-stage build for Smithery
+FROM node:22-slim AS builder
 
-# Create and set the working directory
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# Copy package.json and package-lock.json
-COPY package*.json ./
-
-# Install dependencies
-RUN npm install
-
-# Copy the rest of the application code
+# Copy all files
 COPY . .
 
-# Copy smithery.yaml configuration
-COPY smithery.yaml ./
+# Install dependencies and build
+RUN npm ci --ignore-scripts && \
+    npm run build
+
+# Build Smithery bundle
+RUN npx -y @smithery/cli@latest build -o .smithery/index.cjs
+
+# Production stage
+FROM node:22-slim
+
+WORKDIR /app
+
+# Copy built files and dependencies
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/.smithery ./.smithery
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/smithery.yaml ./
+
+# Install production dependencies only
+RUN npm ci --production --ignore-scripts
 
 # Expose the port for HTTP mode (required for Smithery)
 EXPOSE 8080
-# SMITHERY_API_KEY must be provided at runtime via environment (compose/Kubernetes)
-# Start the MCP server
-CMD ["npm", "start"]
+
+# Start with Smithery's built bundle
+CMD ["node", ".smithery/index.cjs"]
