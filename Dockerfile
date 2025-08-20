@@ -1,34 +1,27 @@
-# Multi-stage build for Smithery
-FROM node:22-slim AS builder
-
-WORKDIR /app
-
-# Copy all files
-COPY . .
-
-# Install dependencies and build
-RUN npm ci --ignore-scripts && \
-    npm run build
-
-# Build Smithery bundle
-RUN npx -y @smithery/cli@latest build -o .smithery/index.cjs
-
-# Production stage
+# Smithery container runtime Dockerfile
 FROM node:22-slim
 
 WORKDIR /app
 
-# Copy built files and dependencies
-COPY --from=builder /app/build ./build
-COPY --from=builder /app/.smithery ./.smithery
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/smithery.yaml ./
+# Copy all project files
+COPY . .
 
-# Install production dependencies only
-RUN npm ci --production --ignore-scripts
+# Install dependencies (both production and dev for building)
+RUN npm ci
 
-# Expose the port for HTTP mode (required for Smithery)
+# Build TypeScript project
+RUN npm run build
+
+# Build Smithery bundle with HTTP transport
+RUN npx -y @smithery/cli@latest build -o .smithery/index.cjs
+
+# Expose port 8080 for Smithery HTTP transport
 EXPOSE 8080
 
-# Start with Smithery's built bundle
-CMD ["node", ".smithery/index.cjs"]
+# Environment variable for runtime config
+ENV NODE_ENV=production
+ENV PORT=8080
+
+# Start the Smithery-built MCP server
+# The built bundle handles HTTP transport automatically
+CMD ["sh", "-c", "exec node .smithery/index.cjs"]
