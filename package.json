@@ -6,7 +6,9 @@
   "scripts": {
     "build": "tsc",
     "dev": "npx @smithery/cli dev",
-    "deploy": "npx @smithery/cli deploy"
+    "deploy": "npx @smithery/cli deploy",
+    "test": "node build/tests/dexscreener.test.js",
+    "start": "node build/index.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.1.0",
