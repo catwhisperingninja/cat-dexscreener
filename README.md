@@ -1,4 +1,5 @@
 # DexScreener MCP Server
+[![smithery badge](https://smithery.ai/badge/@catwhisperingninja/cat-dexscreener)](https://smithery.ai/server/@catwhisperingninja/cat-dexscreener)
 
 An MCP server implementation for accessing the DexScreener API, providing
 real-time access to DEX pair data, token information, and market statistics
