@@ -1,17 +1,16 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import axios from 'axios';
 
 const DEXSCREENER_API = 'https://api.dexscreener.com/latest';
 
-// For Smithery deployment
+// For Smithery deployment - default export
 export default function() {
   const server = new McpServer({
     name: 'dexscreener-mcp',
     version: '0.1.0'
   });
 
-  // Simple tool to search pairs
+  // Search pairs
   server.tool(
     'search_pairs',
     'Search for trading pairs on DexScreener',
@@ -76,25 +75,4 @@ export default function() {
   );
 
   return server.server;
-}
-
-// For local testing with stdio
-if (import.meta.url === `file://${process.argv[1]}`) {
-  const server = new McpServer({
-    name: 'dexscreener-mcp',
-    version: '0.1.0'
-  });
-
-  server.tool('search_pairs', 'Search for trading pairs', 
-    { query: { type: 'string' } },
-    async ({ query }) => {
-      const response = await axios.get(`${DEXSCREENER_API}/dex/search?q=${encodeURIComponent(query)}`);
-      return { content: [{ type: 'text', text: JSON.stringify(response.data, null, 2) }] };
-    }
-  );
-
-  const transport = new StdioServerTransport();
-  server.connect(transport).then(() => {
-    console.error('DexScreener MCP server running');
-  });
 }

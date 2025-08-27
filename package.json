@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.1.0",
-    "axios": "^1.7.9"
+    "axios": "^1.7.9",
+    "tsx": "^4.7.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
