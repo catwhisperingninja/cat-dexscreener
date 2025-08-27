@@ -1,25 +1,130 @@
 #!/usr/bin/env node
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { ErrorCode, McpError, ListToolsRequestSchema, CallToolRequestSchema, ListResourcesRequestSchema, ReadResourceRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
 import { DexScreenerService } from './services/dexscreener.js';
-import type { ListToolsRequest, CallToolRequest, McpToolResponse } from './types/mcp.js';
 
-export class DexScreenerMcpServer {
-  public server!: Server;
-  private dexService: DexScreenerService;
-  private resources: Record<string, any>;
+// Optional: Define configuration schema
+export const configSchema = z.object({
+  apiKey: z.string().optional().describe("DexScreener API key"),
+});
 
-  constructor(dexService: DexScreenerService) {
-    this.dexService = dexService;
+// For Smithery: Export default function that returns server
+export default function({ config }: { config: z.infer<typeof configSchema> }) {
+  const server = new McpServer({
+    name: 'dexscreener-mcp-server',
+    version: '0.1.0'
+  });
 
-    // Initialize resources
-    const resources = {
-      'dexscreener://docs/api': {
-        name: 'DexScreener API Documentation',
-        description: 'Documentation for the DexScreener API endpoints and usage',
-        mimeType: 'text/markdown',
-        text: `# DexScreener API Documentation
+  // Initialize service
+  const dexService = new DexScreenerService();
+  
+  // Use config.apiKey if provided
+  if (config?.apiKey) {
+    process.env.DEXSCREENER_API_KEY = config.apiKey;
+  }
+
+  // Register tools
+  server.tool(
+    'get_latest_token_profiles',
+    'Get the latest token profiles',
+    {},
+    async () => {
+      const result = await dexService.getLatestTokenProfiles();
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
+      };
+    }
+  );
+
+  server.tool(
+    'get_latest_boosted_tokens', 
+    'Get the latest boosted tokens',
+    {},
+    async () => {
+      const result = await dexService.getLatestBoostedTokens();
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
+      };
+    }
+  );
+
+  server.tool(
+    'get_top_boosted_tokens',
+    'Get tokens with most active boosts',
+    {},
+    async () => {
+      const result = await dexService.getTopBoostedTokens();
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
+      };
+    }
+  );
+
+  server.tool(
+    'get_token_orders',
+    'Check orders paid for a specific token',
+    {
+      chainId: z.string().describe('Chain ID (e.g., "solana")'),
+      tokenAddress: z.string().describe('Token address')
+    },
+    async ({ chainId, tokenAddress }) => {
+      const result = await dexService.getTokenOrders({ chainId, tokenAddress });
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
+      };
+    }
+  );
+
+  server.tool(
+    'get_pairs_by_chain_and_address',
+    'Get one or multiple pairs by chain and pair address',
+    {
+      chainId: z.string().describe('Chain ID (e.g., "solana")'),
+      pairId: z.string().describe('Pair address')
+    },
+    async ({ chainId, pairId }) => {
+      const result = await dexService.getPairsByChainAndAddress({ chainId, pairId });
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
+      };
+    }
+  );
+
+  server.tool(
+    'get_pairs_by_token_addresses',
+    'Get one or multiple pairs by token address (max 30)',
+    {
+      tokenAddresses: z.string().describe('Comma-separated token addresses')
+    },
+    async ({ tokenAddresses }) => {
+      const result = await dexService.getPairsByTokenAddresses(tokenAddresses);
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
+      };
+    }
+  );
+
+  server.tool(
+    'search_pairs',
+    'Search for pairs matching query',
+    {
+      query: z.string().describe('Search query')
+    },
+    async ({ query }) => {
+      const result = await dexService.searchPairs({ query });
+      return {
+        content: [{ type: 'text', text: JSON.stringify(result, null, 2) }]
+      };
+    }
+  );
+
+  // Add resources
+  server.resource(
+    'dexscreener://docs/api',
+    'DexScreener API Documentation',
+    'text/markdown',
+    async () => `# DexScreener API Documentation
 
 ## Overview
 DexScreener provides real-time data for decentralized exchanges across multiple blockchains. The API allows you to:
@@ -42,12 +147,13 @@ Common chain IDs include:
 - polygon: Polygon/Matic
 - arbitrum: Arbitrum One
 - avalanche: Avalanche C-Chain`
-      },
-      'dexscreener://docs/memecoin-best-practices': {
-        name: 'Memecoin Trading Best Practices',
-        description: 'Guidelines and best practices for memecoin trading and analysis',
-        mimeType: 'text/markdown',
-        text: `# Memecoin Trading Best Practices
+  );
+
+  server.resource(
+    'dexscreener://docs/memecoin-best-practices',
+    'Memecoin Trading Best Practices',
+    'text/markdown',
+    async () => `# Memecoin Trading Best Practices
 
 ## Analysis Guidelines
 1. Liquidity Analysis
@@ -82,356 +188,85 @@ Common chain IDs include:
 - No clear utility or roadmap
 - Suspicious contract code
 - Unusual buying/selling patterns`
-      }
-    };
+  );
 
-    this.resources = resources;
-    this.server = new Server(
-      {
-        name: 'dexscreener-mcp-server',
-        version: '0.1.0',
-      },
-      {
-        capabilities: {
-          tools: {
-            get_latest_token_profiles: {
-              description: 'Get the latest token profiles',
-              inputSchema: {
-                type: 'object',
-                properties: {},
-                required: [],
-              },
-            },
-            get_latest_boosted_tokens: {
-              description: 'Get the latest boosted tokens',
-              inputSchema: {
-                type: 'object',
-                properties: {},
-                required: [],
-              },
-            },
-            get_top_boosted_tokens: {
-              description: 'Get tokens with most active boosts',
-              inputSchema: {
-                type: 'object',
-                properties: {},
-                required: [],
-              },
-            },
-            get_token_orders: {
-              description: 'Check orders paid for a specific token',
-              inputSchema: {
-                type: 'object',
-                properties: {
-                  chainId: {
-                    type: 'string',
-                    description: 'Chain ID (e.g., "solana")',
-                  },
-                  tokenAddress: {
-                    type: 'string',
-                    description: 'Token address',
-                  },
-                },
-                required: ['chainId', 'tokenAddress'],
-              },
-            },
-            get_pairs_by_chain_and_address: {
-              description: 'Get one or multiple pairs by chain and pair address',
-              inputSchema: {
-                type: 'object',
-                properties: {
-                  chainId: {
-                    type: 'string',
-                    description: 'Chain ID (e.g., "solana")',
-                  },
-                  pairId: {
-                    type: 'string',
-                    description: 'Pair address',
-                  },
-                },
-                required: ['chainId', 'pairId'],
-              },
-            },
-            get_pairs_by_token_addresses: {
-              description: 'Get one or multiple pairs by token address (max 30)',
-              inputSchema: {
-                type: 'object',
-                properties: {
-                  tokenAddresses: {
-                    type: 'string',
-                    description: 'Comma-separated token addresses',
-                  },
-                },
-                required: ['tokenAddresses'],
-              },
-            },
-            search_pairs: {
-              description: 'Search for pairs matching query',
-              inputSchema: {
-                type: 'object',
-                properties: {
-                  query: {
-                    type: 'string',
-                    description: 'Search query',
-                  },
-                },
-                required: ['query'],
-              },
-            },
-          },
-          resources: resources
-        }
-      }
-    );
-
-    this.dexService = dexService;
-    this.setupToolHandlers();
-    this.setupResourceHandlers();
-    
-    // Error handling
-    this.server.onerror = (error: Error) => console.error('[MCP Error]', error);
-    process.on('SIGINT', async () => {
-      await this.server.close();
-      process.exit(0);
-    });
-  }
-
-  private setupToolHandlers() {
-    // List Tools Handler
-    this.server.setRequestHandler(
-      ListToolsRequestSchema,
-      async () => ({
-        tools: [
-                {
-                  name: 'get_latest_token_profiles',
-                  description: 'Get the latest token profiles',
-                  inputSchema: {
-                    type: 'object',
-                    properties: {},
-                    required: [],
-                  },
-                },
-                {
-                  name: 'get_latest_boosted_tokens',
-                  description: 'Get the latest boosted tokens',
-                  inputSchema: {
-                    type: 'object',
-                    properties: {},
-                    required: [],
-                  },
-                },
-                {
-                  name: 'get_top_boosted_tokens',
-                  description: 'Get tokens with most active boosts',
-                  inputSchema: {
-                    type: 'object',
-                    properties: {},
-                    required: [],
-                  },
-                },
-                {
-                  name: 'get_token_orders',
-                  description: 'Check orders paid for a specific token',
-                  inputSchema: {
-                    type: 'object',
-                    properties: {
-                      chainId: {
-                        type: 'string',
-                        description: 'Chain ID (e.g., "solana")',
-                      },
-                      tokenAddress: {
-                        type: 'string',
-                        description: 'Token address',
-                      },
-                    },
-                    required: ['chainId', 'tokenAddress'],
-                  },
-                },
-                {
-                  name: 'get_pairs_by_chain_and_address',
-                  description: 'Get one or multiple pairs by chain and pair address',
-                  inputSchema: {
-                    type: 'object',
-                    properties: {
-                      chainId: {
-                        type: 'string',
-                        description: 'Chain ID (e.g., "solana")',
-                      },
-                      pairId: {
-                        type: 'string',
-                        description: 'Pair address',
-                      },
-                    },
-                    required: ['chainId', 'pairId'],
-                  },
-                },
-                {
-                  name: 'get_pairs_by_token_addresses',
-                  description: 'Get one or multiple pairs by token address (max 30)',
-                  inputSchema: {
-                    type: 'object',
-                    properties: {
-                      tokenAddresses: {
-                        type: 'string',
-                        description: 'Comma-separated token addresses',
-                      },
-                    },
-                    required: ['tokenAddresses'],
-                  },
-                },
-                {
-                  name: 'search_pairs',
-                  description: 'Search for pairs matching query',
-                  inputSchema: {
-                    type: 'object',
-                    properties: {
-                      query: {
-                        type: 'string',
-                        description: 'Search query',
-                      },
-                    },
-                    required: ['query'],
-                  },
-                },
-        ]
-      })
-    );
-
-    // Call Tool Handler
-    this.server.setRequestHandler(
-      CallToolRequestSchema,
-      async (request: { params: { name: string; arguments?: Record<string, unknown> }; method: "tools/call" }) => {
-        try {
-          let result;
-          switch (request.params.name) {
-            case 'get_latest_token_profiles':
-              result = await this.dexService.getLatestTokenProfiles();
-              break;
-
-            case 'get_latest_boosted_tokens':
-              result = await this.dexService.getLatestBoostedTokens();
-              break;
-
-            case 'get_top_boosted_tokens':
-              result = await this.dexService.getTopBoostedTokens();
-              break;
-
-            case 'get_token_orders': {
-              const args = request.params.arguments as { chainId: string; tokenAddress: string };
-              result = await this.dexService.getTokenOrders(args);
-              break;
-            }
-
-            case 'get_pairs_by_chain_and_address': {
-              const args = request.params.arguments as { chainId: string; pairId: string };
-              result = await this.dexService.getPairsByChainAndAddress(args);
-              break;
-            }
-
-            case 'get_pairs_by_token_addresses': {
-              const args = request.params.arguments as { tokenAddresses: string };
-              result = await this.dexService.getPairsByTokenAddresses(args);
-              break;
-            }
-
-            case 'search_pairs': {
-              const args = request.params.arguments as { query: string };
-              result = await this.dexService.searchPairs(args);
-              break;
-            }
-
-            default:
-              throw new McpError(
-                ErrorCode.MethodNotFound,
-                `Unknown tool: ${request.params.name}`
-              );
-          }
-
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify(result, null, 2)
-              }
-            ]
-          };
-        } catch (error) {
-          if (error instanceof McpError) {
-            throw error;
-          }
-          throw new McpError(
-            ErrorCode.InternalError,
-            `DexScreener API error: ${(error as Error).message}`
-          );
-        }
-      }
-    );
-  }
-
-  private setupResourceHandlers() {
-    // List Resources Handler
-    this.server.setRequestHandler(
-      ListResourcesRequestSchema,
-      async () => ({
-        resources: [
-          {
-            uri: 'dexscreener://docs/api',
-            name: 'DexScreener API Documentation',
-            description: 'Documentation for the DexScreener API endpoints and usage',
-            mimeType: 'text/markdown'
-          },
-          {
-            uri: 'dexscreener://docs/memecoin-best-practices',
-            name: 'Memecoin Trading Best Practices',
-            description: 'Guidelines and best practices for memecoin trading and analysis',
-            mimeType: 'text/markdown'
-          }
-        ]
-      })
-    );
-
-    // Read Resource Handler
-    this.server.setRequestHandler(
-      ReadResourceRequestSchema,
-      async (request: { method: "resources/read"; params: { uri: string } }) => {
-        const uri = request.params.uri;
-        const resource = this.resources[uri];
-        
-        if (!resource) {
-          throw new McpError(
-            ErrorCode.MethodNotFound, // Using MethodNotFound as ResourceNotFound isn't available
-            `Resource not found: ${uri}`
-          );
-        }
-
-        return {
-          contents: [{
-            uri,
-            mimeType: resource.mimeType,
-            text: resource.text
-          }]
-        };
-      }
-    );
-  }
-
-  public async run() {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    console.error('DexScreener MCP server running on stdio');
-  }
+  // Return the server for Smithery
+  return server.server;
 }
 
+// For local/stdio mode when run directly
 async function main() {
-  const { DexScreenerService } = await import('./services/dexscreener.js');
+  const server = new McpServer({
+    name: 'dexscreener-mcp-server',
+    version: '0.1.0'
+  });
+
   const dexService = new DexScreenerService();
-  const server = new DexScreenerMcpServer(dexService);
-  await server.run().catch(console.error);
+
+  // Register all the same tools for local mode
+  server.tool('get_latest_token_profiles', 'Get the latest token profiles', {}, async () => {
+    const result = await dexService.getLatestTokenProfiles();
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+  });
+
+  server.tool('get_latest_boosted_tokens', 'Get the latest boosted tokens', {}, async () => {
+    const result = await dexService.getLatestBoostedTokens();
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+  });
+
+  server.tool('get_top_boosted_tokens', 'Get tokens with most active boosts', {}, async () => {
+    const result = await dexService.getTopBoostedTokens();
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+  });
+
+  server.tool('get_token_orders', 'Check orders paid for a specific token',
+    { chainId: z.string().describe('Chain ID'), tokenAddress: z.string().describe('Token address') },
+    async ({ chainId, tokenAddress }) => {
+      const result = await dexService.getTokenOrders({ chainId, tokenAddress });
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool('get_pairs_by_chain_and_address', 'Get pairs by chain and address',
+    { chainId: z.string().describe('Chain ID'), pairId: z.string().describe('Pair address') },
+    async ({ chainId, pairId }) => {
+      const result = await dexService.getPairsByChainAndAddress({ chainId, pairId });
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool('get_pairs_by_token_addresses', 'Get pairs by token addresses',
+    { tokenAddresses: z.string().describe('Comma-separated addresses') },
+    async ({ tokenAddresses }) => {
+      const result = await dexService.getPairsByTokenAddresses(tokenAddresses);
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  server.tool('search_pairs', 'Search for pairs',
+    { query: z.string().describe('Search query') },
+    async ({ query }) => {
+      const result = await dexService.searchPairs({ query });
+      return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
+    }
+  );
+
+  // Add resources
+  server.resource('dexscreener://docs/api', 'DexScreener API Documentation', 'text/markdown',
+    async () => `# DexScreener API Documentation...`
+  );
+
+  server.resource('dexscreener://docs/memecoin-best-practices', 'Memecoin Trading Best Practices', 'text/markdown',
+    async () => `# Memecoin Trading Best Practices...`
+  );
+
+  // Connect stdio transport for local mode
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error('DexScreener MCP server running on stdio');
 }
 
-// Create server instance
-const dexService = new DexScreenerService();
-const mcpServer = new DexScreenerMcpServer(dexService);
-
-// Default export for Smithery - export the server's internal Server instance
-export default mcpServer.server;
+// Run main if executed directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch(console.error);
+}

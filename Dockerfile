@@ -1,4 +1,4 @@
-# Smithery TypeScript server - following cookbook pattern
+# Smithery TypeScript server
 FROM node:22-slim
 
 WORKDIR /app
@@ -12,15 +12,18 @@ RUN npm ci
 # Copy all source files
 COPY . .
 
-# Build with Smithery CLI (like the cookbook)
-RUN npx @smithery/cli build
+# Build TypeScript
+RUN npm run build
 
-# Expose port 8080
+# Build Smithery bundle
+RUN npx @smithery/cli@1.2.17 build
+
+# Expose port
 EXPOSE 8080
 
-# Environment variables
+# Environment
 ENV NODE_ENV=production
 ENV PORT=8080
 
-# Start the server using the built Smithery bundle
+# Start the Smithery bundle
 CMD ["node", ".smithery/index.cjs"]
