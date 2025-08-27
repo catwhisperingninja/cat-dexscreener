@@ -1,4 +1,4 @@
-# Smithery TypeScript server
+# Smithery TypeScript MCP Server
 FROM node:22-slim
 
 WORKDIR /app
@@ -9,21 +9,15 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci
 
-# Copy all source files
+# Copy source
 COPY . .
 
 # Build TypeScript
 RUN npm run build
 
-# Build Smithery bundle
+# Build with Smithery CLI
 RUN npx @smithery/cli@1.2.17 build
 
-# Expose port
+# Run the server
 EXPOSE 8080
-
-# Environment
-ENV NODE_ENV=production
-ENV PORT=8080
-
-# Start the Smithery bundle
 CMD ["node", ".smithery/index.cjs"]
