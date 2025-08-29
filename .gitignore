@@ -39,6 +39,9 @@ tsconfig.tsbuildinfo
 .turbo/
 .npm/
 
+# KiloCode
+.kilocode/
+
 # Environment files
 .env
 .env.*

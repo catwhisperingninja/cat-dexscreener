@@ -2,7 +2,7 @@
   "name": "dexscreener-mcp",
   "version": "0.1.0",
   "type": "module",
-  "module": "./src/index.ts",
+  "module": "./src/index-simple.ts",
   "scripts": {
     "build": "tsc",
     "dev": "npx @smithery/cli dev",
