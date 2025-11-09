@@ -7,7 +7,8 @@
     "build": "tsc",
     "dev": "npx @smithery/cli dev",
     "deploy": "npx @smithery/cli deploy",
-    "test": "node build/tests/dexscreener.test.js",
+    "setup": "node scripts/setup-claude.js",
+    "test": "npm run build && node build/tests/dexscreener.test.js",
     "start": "node build/index.js"
   },
   "dependencies": {
