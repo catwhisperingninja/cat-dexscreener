@@ -84,18 +84,37 @@ function errorResponse(error: unknown): CallToolResult {
     content: [
       {
         type: 'text',
-        text: `Error: ${message}`
+        text: JSON.stringify({ error: message })
       }
     ]
   };
 }
 
-function ensureString(value: unknown, field: string): string {
-  if (typeof value !== 'string' || value.trim().length === 0) {
-    throw new Error(`Missing or invalid "${field}" parameter`);
+function getStringArg(
+  args: Record<string, unknown>,
+  keys: string[],
+  field: string
+): string {
+  for (const key of keys) {
+    const value = args[key];
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value.trim();
+    }
   }
-  return value.trim();
+  throw new Error(`Missing or invalid "${field}" parameter`);
 }
+
+const normalizeChainKeys = ['chainId', 'chain_id', 'chain'];
+const normalizeTokenKeys = [
+  'tokenAddress',
+  'token_address',
+  'address',
+  'contractAddress',
+  'contract_address'
+];
+const normalizeTokenListKeys = ['tokenAddresses', 'token_addresses'];
+const normalizePairKeys = ['pairId', 'pair_id', 'pairAddress'];
+const normalizeQueryKeys = ['query', 'q'];
 
 const API_DOCS_RESOURCE = `# DexScreener MCP API
 
@@ -173,9 +192,9 @@ export default function() {
       chainId: { type: 'string', description: 'Chain ID (e.g., solana, ethereum)' },
       tokenAddress: { type: 'string', description: 'Token address' }
     },
-    ({ chainId, tokenAddress }) => {
-      const safeChain = ensureString(chainId, 'chainId');
-      const safeToken = ensureString(tokenAddress, 'tokenAddress');
+    (args) => {
+      const safeChain = getStringArg(args, normalizeChainKeys, 'chainId');
+      const safeToken = getStringArg(args, normalizeTokenKeys, 'tokenAddress');
       return fetchWithRateLimit(
         `/orders/v1/${encodeURIComponent(safeChain)}/${encodeURIComponent(safeToken)}`,
         tokenRateLimiter
@@ -190,9 +209,9 @@ export default function() {
       chainId: { type: 'string', description: 'Chain ID (e.g., solana, ethereum)' },
       pairId: { type: 'string', description: 'Pair address/identifier' }
     },
-    ({ chainId, pairId }) => {
-      const safeChain = ensureString(chainId, 'chainId');
-      const safePair = ensureString(pairId, 'pairId');
+    (args) => {
+      const safeChain = getStringArg(args, normalizeChainKeys, 'chainId');
+      const safePair = getStringArg(args, normalizePairKeys, 'pairId');
       return fetchWithRateLimit(
         `/latest/dex/pairs/${encodeURIComponent(safeChain)}/${encodeURIComponent(safePair)}`,
         dexRateLimiter
@@ -209,8 +228,14 @@ export default function() {
         description: 'Comma-separated list of addresses (max 30)'
       }
     },
-    ({ tokenAddresses }) => {
-      const addresses = ensureString(tokenAddresses, 'tokenAddresses')
+    (args) => {
+      const rawValue = getStringArg(
+        args,
+        [...normalizeTokenListKeys, ...normalizeTokenKeys],
+        'tokenAddresses'
+      );
+
+      const addresses = rawValue
         .split(',')
         .map((addr) => addr.trim())
         .filter(Boolean)
@@ -232,8 +257,10 @@ export default function() {
     {
       tokenAddress: { type: 'string', description: 'Token address' }
     },
-    ({ tokenAddress }) => {
-      const address = encodeURIComponent(ensureString(tokenAddress, 'tokenAddress'));
+    (args) => {
+      const address = encodeURIComponent(
+        getStringArg(args, normalizeTokenKeys, 'tokenAddress')
+      );
       return fetchWithRateLimit(`/latest/dex/tokens/${address}`, dexRateLimiter);
     }
   );
@@ -244,8 +271,8 @@ export default function() {
     {
       query: { type: 'string', description: 'Search query (token name or symbol)' }
     },
-    ({ query }) => {
-      const q = ensureString(query, 'query');
+    (args) => {
+      const q = getStringArg(args, normalizeQueryKeys, 'query');
       return fetchWithRateLimit(
         '/latest/dex/search',
         dexRateLimiter,

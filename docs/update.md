@@ -69,3 +69,20 @@ build && node …, etc.) so README/install instructions work verbatim and
 Smithery’s cloud build has a reproducible entrypoint. Plan was not successful.
 It's impossible to tell if server function is designed. Please review Context7
 docs for Smithery info.
+## 2025-11-09
+- Reviewed the Smithery "TypeScript with Smithery CLI" migration guide and confirmed that Step 4/5 require the `module` hint plus separate `build:http`, `build:stdio`, `start:http`, and `start:stdio` scripts so the CLI can orchestrate HTTP transport while custom containers keep STDIO fallbacks.
+- Updated `package.json` scripts accordingly, added the `prepublishOnly` safeguard, and moved `@smithery/cli` into `devDependencies` while promoting `@smithery/sdk` to a runtime dependency so the generated `.smithery/index.cjs` has everything it needs in cloud builds.
+- Regenerated `package-lock.json` via `npm install` and re-ran the full integration suite (`npm test`) plus the Smithery build (`npm run build:http`), both of which now succeed locally; note the tests require outbound HTTPS to DexScreener.
+- New workflow:
+    - Local HTTP playground: `npm run dev`
+    - Smithery artifact: `npm run build:http`
+    - STDIO fallback: `npm run start:stdio`
+    - Container/cloud deploy: build the Docker image (uses `.smithery/index.cjs`) and push/run it with your SMITHERY_API_KEY.
+- Next unblockers: hook `npm run build:http` into CI so artifacts stay fresh, and keep runtime images (Dockerfile, Kubernetes, etc.) pinned to the same CLI version (>=1.6.3) so the artifact you test locally matches production.
+## 2025-11-10 (2)
+- Clarified deployment workflow: the Smithery CLI (v1.6.3) does not expose a `deploy` command, so our scripts now point builders at `npm run build:http` (HTTP artifact) or `npm run start:http` (runtime). Removed the broken `npm run deploy` alias from `package.json` to avoid future confusion.
+- To ship the server, either (a) run `smithery dev` for local testing or `npm run start:http` with `SMITHERY_API_KEY` in your environment, or (b) build/push the Docker image—which now runs `.smithery/index.cjs` directly—into your own infrastructure.
+## 2025-11-10 (3)
+- Tool handlers now accept common alias parameter names (`token_address`, `contractAddress`, `pairAddress`, etc.) via a shared `getStringArg` helper, preventing Smithery clients from tripping the "Missing tokenAddress" guard when they use snake_case fields.
+- Error payloads are JSON encoded (`{"error": "..."}`) instead of plain strings, so downstream automations like pydantic_trader can continue to `json.loads` even when a request fails.
+- `npm test` (STDIO build + integration suite) still passes after the normalization changes.

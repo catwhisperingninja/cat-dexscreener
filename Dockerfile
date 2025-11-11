@@ -16,7 +16,7 @@ COPY . .
 RUN npm run build
 
 # Build with Smithery CLI
-RUN npx @smithery/cli@1.2.17 build
+RUN npx @smithery/cli@1.6.3 build
 
 # Run the server
 EXPOSE 8080

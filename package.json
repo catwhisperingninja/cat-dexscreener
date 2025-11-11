@@ -2,22 +2,27 @@
   "name": "dexscreener-mcp",
   "version": "0.1.0",
   "type": "module",
-  "module": "./src/index.ts",
+  "module": "src/index.ts",
   "scripts": {
-    "build": "tsc",
-    "dev": "npx @smithery/cli dev",
-    "deploy": "npx @smithery/cli deploy",
+    "build": "npm run build:http",
+    "build:http": "smithery build",
+    "build:stdio": "tsc",
+    "dev": "smithery dev",
     "setup": "node scripts/setup-claude.js",
-    "test": "npm run build && node build/tests/dexscreener.test.js",
-    "start": "node build/index.js"
+    "start": "npm run start:http",
+    "start:http": "node .smithery/index.cjs",
+    "start:stdio": "node build/index.js",
+    "test": "npm run build:stdio && node build/tests/dexscreener.test.js",
+    "prepublishOnly": "npm run build:stdio"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.1.0",
+    "@smithery/sdk": "^1.7.4",
     "axios": "^1.7.9",
     "tsx": "^4.7.0"
   },
   "devDependencies": {
-    "@smithery/sdk": "^1.7.4",
+    "@smithery/cli": "^1.6.3",
     "@types/node": "^22.10.5",
     "chalk": "^5.6.2",
     "typescript": "^5.7.2"
