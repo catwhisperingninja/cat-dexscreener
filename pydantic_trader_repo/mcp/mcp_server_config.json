@@ -1,0 +1,44 @@
+{
+	"_comment": "LOCAL MCP SERVERS ONLY - Accessed via HTTP Gateway at localhost:8888",
+	"_comment_cloud": "Smithery Cloud servers (cat-dexscreener, uniswap-trader-cloud) are NOT listed here",
+	"_comment_cloud_access": "Cloud servers accessed via smithery_cloud_client.py with SMITHERY_API_KEY",
+	"servers": {
+		"aave": {
+			"name": "AAVE MCP Server",
+			"path": "/Users/dev/Documents/MCP/aave-mcp",
+			"command": ["poetry", "run", "python", "main.py"],
+			"env": {
+				"THEGRAPH_API_KEY": "${THEGRAPH_API_KEY}"
+			},
+			"description": "AAVE protocol data and liquidation monitoring"
+		},
+		"uniswap-pools": {
+			"name": "Uniswap Pools MCP Server",
+			"path": "/Users/dev/Documents/MCP/uniswap-pools-mcp",
+			"command": ["poetry", "run", "python", "main.py"],
+			"env": {
+				"THEGRAPH_API_KEY": "${THEGRAPH_API_KEY}"
+			},
+			"description": "Uniswap V3 pool data and pricing"
+		},
+		"uniswap-trader": {
+			"name": "Uniswap Trader MCP Server",
+			"path": "/Users/dev/Documents/MCP/uniswap-trader-mcp",
+			"command": ["node", "index.js"],
+			"env": {
+				"INFURA_KEY": "${INFURA_KEY}",
+				"WALLET_PRIVATE_KEY": "${WALLET_PRIVATE_KEY}"
+			},
+			"description": "Execute Uniswap trades"
+		},
+		"dune": {
+			"name": "Dune Analytics MCP Server",
+			"path": "/Users/dev/Documents/MCP/dune-analytics-mcp",
+			"command": ["poetry", "run", "python", "main.py"],
+			"env": {
+				"DUNE_API_KEY": "${DUNE_API_KEY}"
+			},
+			"description": "Cross-DEX price data and market analytics"
+		}
+	}
+}

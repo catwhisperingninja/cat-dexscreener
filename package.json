@@ -16,6 +16,7 @@
     "prepublishOnly": "npm run build:stdio"
   },
   "dependencies": {
+    "@genkit-ai/mcp": "^1.22.0",
     "@modelcontextprotocol/sdk": "^1.1.0",
     "@smithery/sdk": "^1.7.4",
     "axios": "^1.7.9",
